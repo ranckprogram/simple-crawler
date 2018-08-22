@@ -1,12 +1,11 @@
-var http = require('http')
+var https = require('https')
 var stream = require('stream')
 var fs = require('fs')
 
 var cheerio = require('cheerio')
 
-var base_url = 'http://naizi555.xyz?page=1'
+var base_url = 'https://www.ourocg.cn/card/list-5/1'
 
-var v = 'http://r3.zzz1111.xyz/archived/13335_15dfa9fbabf9c36af0e812fb34576b65.jpg'
 /**
  *
  * 思路:
@@ -15,16 +14,17 @@ var v = 'http://r3.zzz1111.xyz/archived/13335_15dfa9fbabf9c36af0e812fb34576b65.j
  * */
 
 var data = {
-	video: {
-		list: [{
-			name: '',
-			src: '',
-			url: ''
-		}]
-	}
+	list: [{
+		name: '',   // 卡名字
+		attr: '',   // 属性  光，火，水....
+		effect: '',  // 效果描述
+		src: '',
+		ATK: '',    // 攻击力
+		DEFL: ''    // 防御力
+	}]
 }
 
-http.get(base_url, function (res) {
+https.get(base_url, function (res) {
 	var resultData = ''
 	
 	res.on('data', function (chunk) {
@@ -36,11 +36,14 @@ http.get(base_url, function (res) {
 		// 数据解析
 		var resultList = analyticData(resultData)
 		var content = resultList.map(function (item) {
-			return '文件名： '+ item.title + '\n' + 'src:' + item.src +'\n\n'
+			// 这里的字符串可以用对象数据结构映射
+			return '卡名字： '+ item.name + '\n' + 'src:' + item.attr +'\n\n'
 		})
 		// 数据写入文件
-		fs.writeFile('./data.tt', content.join(''), function (err) {
-			console.log(err)
+		fs.writeFile('./data.txt', content.join(''),function (err) {
+			if (err) {
+				console.log(err)
+			}
 		})
 		
 	})
@@ -48,13 +51,29 @@ http.get(base_url, function (res) {
 
 function analyticData (html) {
 	var $ = cheerio.load(html)
-	var list = $('.content .row > a')
+	console.log(html)
+	fs.writeFile('./1.html', html)
+	var list = $('.card-list').find('.card-item')
+	var effect = $('.effect')
+	console.log(list.length)
 	var result = []
-	for (var i = 0; i < list.length; i++) {
-		result.push({
-			title: $(list[i]).find('.title').text(),
-			src: $(list[i]).find('img').attr('src')
-		})
-	}
+	// for (var i = 0; i < list.length; i++) {
+	// 	console.log($(list[i]).find('a').text())
+	// 	console.log(effect)
+	//
+	// 	console.log($(list[i]).children('img').attr('src'))
+	// 	result.push({
+	// 		name: $(list[i]).find('a').text(),
+	// 		attr: $(list[i]).find('.ak').text()
+	// 	})
+	// }
+	
+	list.each(function (item) {
+		console.log($(this).find('a').text())
+		console.log($(this).find('img').attr('src'))
+		console.log($(this).toString())
+		
+	})
+
 	return result
 }
