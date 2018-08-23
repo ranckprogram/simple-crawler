@@ -1,10 +1,10 @@
-var https = require('https')
+var http = require('http')
 var stream = require('stream')
 var fs = require('fs')
 
 var cheerio = require('cheerio')
 
-var base_url = 'https://www.ourocg.cn/card/list-5/1'
+var base_url = 'http://www.ruanyifeng.com/blog/javascript/'
 
 /**
  *
@@ -13,18 +13,8 @@ var base_url = 'https://www.ourocg.cn/card/list-5/1'
  *
  * */
 
-var data = {
-	list: [{
-		name: '',   // 卡名字
-		attr: '',   // 属性  光，火，水....
-		effect: '',  // 效果描述
-		src: '',
-		ATK: '',    // 攻击力
-		DEFL: ''    // 防御力
-	}]
-}
 
-https.get(base_url, function (res) {
+http.get(base_url, function (res) {
 	var resultData = ''
 	
 	res.on('data', function (chunk) {
@@ -34,46 +24,71 @@ https.get(base_url, function (res) {
 	
 	res.on('end', function () {
 		// 数据解析
-		var resultList = analyticData(resultData)
+		var resultList = analyticList(resultData)
 		var content = resultList.map(function (item) {
 			// 这里的字符串可以用对象数据结构映射
-			return '卡名字： '+ item.name + '\n' + 'src:' + item.attr +'\n\n'
+			return '文章名称： ' + item.name + '\n' + '文章链接:  ' + item.href + '\n\n'
 		})
 		// 数据写入文件
-		fs.writeFile('./data.txt', content.join(''),function (err) {
+		fs.writeFile('./list.txt', content.join(''), function (err) {
 			if (err) {
 				console.log(err)
 			}
 		})
 		
+		resultList.forEach(function (item) {
+			console.log(item)
+			getDetail(item.href)
+		})
+		
 	})
 })
 
-function analyticData (html) {
+function analyticList (html) {
 	var $ = cheerio.load(html)
-	console.log(html)
-	fs.writeFile('./1.html', html)
-	var list = $('.card-list').find('.card-item')
-	var effect = $('.effect')
-	console.log(list.length)
+	var list = $('#alpha-inner .module-list-item')
 	var result = []
-	// for (var i = 0; i < list.length; i++) {
-	// 	console.log($(list[i]).find('a').text())
-	// 	console.log(effect)
-	//
-	// 	console.log($(list[i]).children('img').attr('src'))
-	// 	result.push({
-	// 		name: $(list[i]).find('a').text(),
-	// 		attr: $(list[i]).find('.ak').text()
-	// 	})
-	// }
-	
-	list.each(function (item) {
+	list.each(function () {
 		console.log($(this).find('a').text())
-		console.log($(this).find('img').attr('src'))
-		console.log($(this).toString())
-		
+		console.log($(this).find('a').attr('href'))
+		result.push({
+			name: $(this).find('a').text(),
+			href: $(this).find('a').attr('href')
+		})
 	})
+	return result
+}
 
+function getDetail (url) {
+	http.get(url, function (res) {
+		var resultData = ''
+		
+		res.on('data', function (chunk) {
+			console.log('详情获取数据中')
+			resultData += chunk
+		})
+		
+		res.on('end', function () {
+			console.log(resultData)
+			var detail = analyticDetail(resultData)
+			fs.writeFile('./file/' + detail.title + '.txt', detail.content, function (err) {
+				if (err) {
+					console.log(err)
+				}
+			})
+		})
+	})
+}
+
+function analyticDetail (html) {
+	var $ = cheerio.load(html)
+	var result = {}
+	var title = $('#page-title').text()
+	var content = $('#main-content').text()
+	var published = $('.published').text()
+	
+	result.title = title
+	result.content = content
+	result.published = published
 	return result
 }
